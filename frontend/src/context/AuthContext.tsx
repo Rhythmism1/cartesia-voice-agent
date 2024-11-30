@@ -11,26 +11,24 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Check localStorage for token on the client side
   useEffect(() => {
-    if (typeof window !== "undefined") {
+      // Access localStorage only on the client side
       const token = localStorage.getItem("token");
-      setIsAuthenticated(!!token); // Set authentication state based on token existence
-    }
+      setIsAuthenticated(!!token);
   }, []);
 
   const login = (token: string) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("token", token); // Store token in localStorage
+      localStorage.setItem("token", token);
+      setIsAuthenticated(true);
     }
-    setIsAuthenticated(true);
   };
 
   const logout = () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("token");
+      setIsAuthenticated(false);
     }
-    setIsAuthenticated(false);
   };
 
   return (

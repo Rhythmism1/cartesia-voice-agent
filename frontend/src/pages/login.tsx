@@ -13,59 +13,41 @@ export default function LoginOrRegister() {
     e.preventDefault();
     setError("");
     setSuccess("");
-
+  
     const endpoint = isRegister ? "/api/register" : "/api/login";
-
+  
     try {
-      // Send login or register request
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
-
+  
       if (response.ok) {
         const data = await response.json();
+        console.log("Received token:", data.access_token); // Debug log
+
+        localStorage.setItem("token", data.access_token);
+
         if (isRegister) {
           setSuccess(data.message);
         } else {
           // Store token after login
-          const token = data.access_token;
-          localStorage.setItem("token", token);
-
-          // Fetch the user's test code
-          const testCodeResponse = await fetch(
-            `${process.env.NEXT_PUBLIC_BACKEND_URL}/setup/test-code`,
-            {
-              method: "GET",
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
-
-          if (testCodeResponse.ok) {
-            const testCodeData = await testCodeResponse.json();
-            if (testCodeData.test_code === "") {
-              router.push("/setup"); // Redirect to setup page if no test code is set
-            } else {
-              router.push("/"); // Redirect to main SPA
-            }
-          } else {
-            const errorText = await testCodeResponse.text(); // Fetch the error text
-            console.error("Test Code Fetch Error:", errorText);
-            setError("Failed to fetch test code. Please try again.");
-          }
+          localStorage.setItem("token", data.access_token);
+  
+          // Redirect to setup page
+          router.push("/setup");
         }
       } else {
         const data = await response.json();
         setError(data.detail || "An error occurred");
       }
     } catch (err) {
-      console.error("Submission Error:", err);
+      console.error(err);
       setError("An error occurred during submission");
     }
   };
+  
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">

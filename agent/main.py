@@ -73,7 +73,11 @@ class RegisterRequest(BaseModel):
     password: str
 
 class TestCodeUpdate(BaseModel):
-    test_code: str
+    test_code_01: str
+    test_code_02: str
+    test_code_03: str
+    test_code_04: str
+    test_code_05: str
 
 # Helper functions
 def verify_password(plain_password, hashed_password):
@@ -122,7 +126,12 @@ async def register(request: RegisterRequest):
         raise HTTPException(status_code=400, detail="User already exists")
 
     hashed_password = pwd_context.hash(request.password)
-    await users_collection.insert_one({"email": request.email, "password": hashed_password, "test_code": ""})
+    await users_collection.insert_one({"email": request.email, "password": hashed_password, 
+        "test_code_01": "",
+        "test_code_02": "",
+        "test_code_03": "",
+        "test_code_04": "",
+        "test_code_05": ""})
     return {"message": "User registered successfully"}
 
 # Test code endpoints
@@ -131,23 +140,42 @@ async def update_test_code(data: TestCodeUpdate, user_email: str = Depends(get_c
     user = await users_collection.find_one({"email": user_email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-
-    await users_collection.update_one({"email": user_email}, {"$set": {"test_code": data.test_code}})
+    update_data = {
+        "test_code_01": data.test_code_01,
+        "test_code_02": data.test_code_02,
+        "test_code_03": data.test_code_03,
+        "test_code_04": data.test_code_04,
+        "test_code_05": data.test_code_05
+    }
+    await users_collection.update_one({"email": user_email}, {"$set": update_data})
     return {"message": "Test code updated successfully"}
 
 @app.get("/setup/test-code")
 async def get_test_code(user_email: str = Depends(get_current_user)):
-    print(f"Fetching test code for user: {user_email}")  # Log user email
     user = await users_collection.find_one({"email": user_email})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    
-    # Safely retrieve the test code or default to an empty string
-    test_code = user.get("test_code", "")
-    print(f"Test code retrieved: {test_code}")  # Log the retrieved test code
-    return {"test_code": test_code}
-
+    return {
+        "test_code_01": user.get("test_code_01", ""),
+        "test_code_02": user.get("test_code_02", ""),
+        "test_code_03": user.get("test_code_03", ""),
+        "test_code_04": user.get("test_code_04", ""),
+        "test_code_05": user.get("test_code_05", "")
+    }
+"""
+@app.post("/setup/test-code")
+async def update_test_code(
+    test_code: str, user_email: str = Depends(get_current_user)
+):
+    result = await users_collection.update_one( 
+        {"email": user_email},
+        {"$set": {"test_code": test_code}},
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=400, detail="Failed to update test code.")
+    return {"message": "Test code updated successfully."}
 # Prewarm models for LiveKit
+"""
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load()
 
@@ -168,7 +196,7 @@ async def entrypoint(ctx: JobContext):
         messages=[
             ChatMessage(
                 role="system",
-                content="You are a voice assistant created by LiveKit. Your interface with users will be voice. Pretend we're having a conversation, no special formatting or headings, just natural speech.",
+                content="You are an employee at company. your name is ______. you are to remain silent if not directly referred to. therefore, if your name is not mentioned, you are to respond with 'silent.' if you are directly referred to, you are able to respond as necesary here is your knowledge {}, and remmeber remain silent unless your name is called. ",
             )
         ]
     )
@@ -239,7 +267,7 @@ async def entrypoint(ctx: JobContext):
     await ctx.room.local_participant.set_attributes({"voices": json.dumps(voices)})
 
     agent.start(ctx.room)
-    await agent.say("Hi there, how are you doing today?", allow_interruptions=True)
+    await agent.say("Im ready to join the zoom call.", allow_interruptions=True)
 
 # Run the FastAPI and LiveKit agent with multiprocessing
 def run_fastapi():
