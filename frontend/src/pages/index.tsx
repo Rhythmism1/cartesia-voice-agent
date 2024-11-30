@@ -5,13 +5,32 @@ import {
 } from "@livekit/components-react";
 import { AnimatePresence, motion } from "framer-motion";
 import Head from "next/head";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { useRouter } from "next/router";
 
 import Assistant from "@/components/Assistant";
 import { PlaygroundToast, ToastType } from "@/components/toast/PlaygroundToast";
 import { ConnectionProvider, useConnection } from "@/hooks/useConnection";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login"); // Redirect to login if unauthenticated
+    } else {
+      setLoading(false); // Stop loading when authenticated
+    }
+  }, [isAuthenticated, router]);
+
+  if (loading) {
+    // Show a loading state while redirecting or authenticating
+    return <div>Loading...</div>;
+  }
+
   return (
     <ConnectionProvider>
       <HomeInner />
